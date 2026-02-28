@@ -88,6 +88,15 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
     )
 
 
+# Global handler for ValueError (e.g., password too long for bcrypt)
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError):
+    return JSONResponse(
+        status_code=422,
+        content={"data": None, "error": str(exc), "meta": None},
+    )
+
+
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     logger.exception("Unhandled exception: %s", exc)
