@@ -1,9 +1,11 @@
 import pytest
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ConflictException, NotFoundException
 from app.schemas.user import UserCreate, UserUpdate
 from app.services.user_service import UserService
+from app.models.user import User
 
 
 @pytest.mark.asyncio
@@ -62,3 +64,25 @@ async def test_list_users(db_session: AsyncSession) -> None:
     page = await service.list_users(limit=100, offset=0)
     assert page.total >= 2
     assert len(page.items) >= 2
+
+
+@pytest.mark.asyncio
+async def test_create_user_race_condition(db_session: AsyncSession) -> None:
+    service = UserService(db_session)
+    data = UserCreate(email="race@example.com", password="secret123")
+    # first create succeeds
+    await service.create_user(data)
+    # simulate race by bypassing the email check in service
+    async def no_check(email: str):
+        return None
+
+    service.repo.get_by_email = no_check  # type: ignore
+
+    with pytest.raises(ConflictException):
+        await service.create_user(data)
+
+    # verify that only one record exists in the database
+    result = await db_session.execute(
+        select(func.count()).select_from(User).where(User.email == data.email)
+    )
+    assert result.scalar_one() == 1

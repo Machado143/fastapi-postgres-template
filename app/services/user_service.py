@@ -1,3 +1,4 @@
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ConflictException, NotFoundException
@@ -22,8 +23,12 @@ class UserService:
             full_name=data.full_name,
         )
         # transaction controlled here
-        async with self.session.begin():
-            user = await self.repo.create(user)
+        try:
+            async with self.session.begin():
+                user = await self.repo.create(user)
+        except IntegrityError:
+            # another request wrote the same email concurrently
+            raise ConflictException(f"Email '{data.email}' is already registered")
         return UserRead.model_validate(user)
 
     async def get_user(self, user_id: int) -> UserRead:
@@ -56,8 +61,11 @@ class UserService:
             user.hashed_password = hash_password(data.password)
         if data.is_active is not None:
             user.is_active = data.is_active
-        async with self.session.begin():
-            user = await self.repo.update(user)
+        try:
+            async with self.session.begin():
+                user = await self.repo.update(user)
+        except IntegrityError:
+            raise ConflictException("Email already registered")
         return UserRead.model_validate(user)
 
     async def delete_user(self, user_id: int) -> None:

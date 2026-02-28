@@ -1,7 +1,7 @@
 """create users table
 
 Revision ID: 0001_create_users_table
-Revises: 
+Revises:
 Create Date: 2026-02-28 00:00:00.000000
 """
 
@@ -23,7 +23,9 @@ def upgrade() -> None:
         sa.Column("hashed_password", sa.String(255), nullable=False),
         sa.Column("full_name", sa.String(255), nullable=True),
         sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.true()),
-        sa.Column("is_superuser", sa.Boolean(), nullable=False, server_default=sa.false()),
+        sa.Column(
+            "is_superuser", sa.Boolean(), nullable=False, server_default=sa.false()
+        ),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
