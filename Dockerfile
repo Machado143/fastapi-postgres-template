@@ -10,10 +10,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Não expor porta fixa, Railway define via $PORT
-# EXPOSE 8000
+# Run as non-root for security
+RUN adduser --disabled-password --gecos "" appuser \
+    && chown -R appuser:appuser /app
+USER appuser
 
+# Railway injects $PORT at runtime
 CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
     CMD curl -f http://localhost:${PORT}/health || exit 1

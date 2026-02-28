@@ -9,12 +9,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from starlette.middleware.base import BaseHTTPMiddleware
 from prometheus_client import Histogram, generate_latest, CONTENT_TYPE_LATEST
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.api.v1.router import router as v1_router
 from app.core.exceptions import AppException
+from app.core.limiter import limiter
 from app.core.logging import logger, setup_logging, request_id_ctx_var
 from app.db.session import engine
 
@@ -146,8 +146,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Rate limiter
-limiter = Limiter(key_func=get_remote_address)
+# Rate limiter (singleton defined in app.core.limiter)
 app.state.limiter = limiter
 app.add_exception_handler(429, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
