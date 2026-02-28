@@ -3,17 +3,18 @@ from datetime import timedelta
 from httpx import AsyncClient
 
 from app.core.security import create_access_token
+from tests.conftest import TEST_PASSWORD
 
 
 @pytest.mark.asyncio
 async def test_login_success(client: AsyncClient) -> None:
     await client.post(
         "/api/v1/users",
-        json={"email": "auth_login@example.com", "password": "secret123"},
+        json={"email": "auth_login@example.com", "password": TEST_PASSWORD},
     )
     response = await client.post(
         "/api/v1/auth/token",
-        data={"username": "auth_login@example.com", "password": "secret123"},
+        data={"username": "auth_login@example.com", "password": TEST_PASSWORD},
     )
     assert response.status_code == 200
     data = response.json()
@@ -25,7 +26,7 @@ async def test_login_success(client: AsyncClient) -> None:
 async def test_login_wrong_password(client: AsyncClient) -> None:
     await client.post(
         "/api/v1/users",
-        json={"email": "auth_wrong@example.com", "password": "correct123"},
+        json={"email": "auth_wrong@example.com", "password": TEST_PASSWORD},
     )
     response = await client.post(
         "/api/v1/auth/token",
@@ -38,7 +39,7 @@ async def test_login_wrong_password(client: AsyncClient) -> None:
 async def test_login_nonexistent_user(client: AsyncClient) -> None:
     response = await client.post(
         "/api/v1/auth/token",
-        data={"username": "nobody@example.com", "password": "whatever"},
+        data={"username": "nobody@example.com", "password": TEST_PASSWORD},
     )
     assert response.status_code == 401
 
@@ -49,13 +50,13 @@ async def test_get_me(client: AsyncClient) -> None:
         "/api/v1/users",
         json={
             "email": "auth_me@example.com",
-            "password": "secret123",
+            "password": TEST_PASSWORD,
             "full_name": "Me User",
         },
     )
     token_response = await client.post(
         "/api/v1/auth/token",
-        data={"username": "auth_me@example.com", "password": "secret123"},
+        data={"username": "auth_me@example.com", "password": TEST_PASSWORD},
     )
     token = token_response.json()["access_token"]
     response = await client.get(
@@ -101,12 +102,12 @@ async def test_inactive_user_returns_401(client: AsyncClient) -> None:
     """Deactivated users must not be able to authenticate."""
     await client.post(
         "/api/v1/users",
-        json={"email": "inactive@example.com", "password": "secret123"},
+        json={"email": "inactive@example.com", "password": TEST_PASSWORD},
     )
     # get a superuser token to deactivate the user
     su_token_resp = await client.post(
         "/api/v1/auth/token",
-        data={"username": "inactive@example.com", "password": "secret123"},
+        data={"username": "inactive@example.com", "password": TEST_PASSWORD},
     )
     token = su_token_resp.json()["access_token"]
 

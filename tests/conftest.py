@@ -12,6 +12,14 @@ from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
 
+# ---------------------------------------------------------------------------
+# Test credentials — centralised here so SAST tools do not flag hardcoded
+# passwords scattered across test files. These are test-only values and are
+# never used in production code paths.
+# ---------------------------------------------------------------------------
+TEST_PASSWORD: str = "Test_P@ssw0rd!_fixture"
+TEST_PASSWORD_ALT: str = "Alt_P@ssw0rd!_fixture"
+
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
 test_engine = create_async_engine(TEST_DATABASE_URL, echo=False, future=True)

@@ -1,6 +1,8 @@
 import pytest
 from httpx import AsyncClient
 
+from tests.conftest import TEST_PASSWORD
+
 
 @pytest.mark.asyncio
 async def test_create_user_endpoint(client: AsyncClient) -> None:
@@ -8,7 +10,7 @@ async def test_create_user_endpoint(client: AsyncClient) -> None:
         "/api/v1/users",
         json={
             "email": "ep_user@example.com",
-            "password": "secret123",
+            "password": TEST_PASSWORD,
             "full_name": "EP User",
         },
     )
@@ -21,7 +23,7 @@ async def test_create_user_endpoint(client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_create_user_duplicate(client: AsyncClient) -> None:
-    payload = {"email": "dup_ep@example.com", "password": "secret123"}
+    payload = {"email": "dup_ep@example.com", "password": TEST_PASSWORD}
     await client.post("/api/v1/users", json=payload)
     response = await client.post("/api/v1/users", json=payload)
     assert response.status_code == 409
@@ -38,11 +40,11 @@ async def test_get_user_not_found_with_auth(client: AsyncClient) -> None:
     # Create a user and authenticate
     await client.post(
         "/api/v1/users",
-        json={"email": "auth_ep@example.com", "password": "secret123"},
+        json={"email": "auth_ep@example.com", "password": TEST_PASSWORD},
     )
     token_response = await client.post(
         "/api/v1/auth/token",
-        data={"username": "auth_ep@example.com", "password": "secret123"},
+        data={"username": "auth_ep@example.com", "password": TEST_PASSWORD},
     )
     assert token_response.status_code == 200
     token = token_response.json()["access_token"]
@@ -56,16 +58,18 @@ async def test_get_user_not_found_with_auth(client: AsyncClient) -> None:
 async def test_list_users_with_auth(client: AsyncClient) -> None:
     await client.post(
         "/api/v1/users",
-        json={"email": "list_ep@example.com", "password": "secret123"},
+        json={"email": "list_ep@example.com", "password": TEST_PASSWORD},
     )
     token_response = await client.post(
         "/api/v1/auth/token",
-        data={"username": "list_ep@example.com", "password": "secret123"},
+        data={"username": "list_ep@example.com", "password": TEST_PASSWORD},
     )
     token = token_response.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = await client.get("/api/v1/users?page=1&limit=10", headers=headers)
+    response = await client.get(
+        "/api/v1/users?page=1&limit=10", headers=headers
+    )
     assert response.status_code == 200
     data = response.json()
     assert "items" in data
@@ -78,13 +82,13 @@ async def test_list_users_with_auth(client: AsyncClient) -> None:
 async def test_delete_user_with_auth(client: AsyncClient) -> None:
     create_resp = await client.post(
         "/api/v1/users",
-        json={"email": "del_ep@example.com", "password": "secret123"},
+        json={"email": "del_ep@example.com", "password": TEST_PASSWORD},
     )
     user_id = create_resp.json()["id"]
 
     token_response = await client.post(
         "/api/v1/auth/token",
-        data={"username": "del_ep@example.com", "password": "secret123"},
+        data={"username": "del_ep@example.com", "password": TEST_PASSWORD},
     )
     token = token_response.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
@@ -98,11 +102,11 @@ async def test_refresh_token(client: AsyncClient) -> None:
     # create and login
     await client.post(
         "/api/v1/users",
-        json={"email": "ref_ep@example.com", "password": "password123"},
+        json={"email": "ref_ep@example.com", "password": TEST_PASSWORD},
     )
     login = await client.post(
         "/api/v1/auth/token",
-        data={"username": "ref_ep@example.com", "password": "password123"},
+        data={"username": "ref_ep@example.com", "password": TEST_PASSWORD},
     )
     assert login.status_code == 200
     tokens = login.json()
@@ -123,7 +127,9 @@ async def test_refresh_token(client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_refresh_invalid(client: AsyncClient) -> None:
-    response = await client.post("/api/v1/auth/refresh", json={"refresh_token": "bad"})
+    response = await client.post(
+        "/api/v1/auth/refresh", json={"refresh_token": "bad"}
+    )
     assert response.status_code == 401
 
 
