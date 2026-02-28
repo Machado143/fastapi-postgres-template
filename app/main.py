@@ -73,13 +73,46 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("Application shutting down")
 
 
+_TAGS_METADATA = [
+    {
+        "name": "auth",
+        "description": (
+            "Authentication endpoints. "
+            "Use `/auth/token` to get a JWT access token "
+            "(OAuth2 password flow). "
+            "Use `/auth/refresh` to rotate the refresh token."
+        ),
+    },
+    {
+        "name": "users",
+        "description": (
+            "User management. "
+            "Create, read, update and delete users. "
+            "All endpoints except `POST /users` require a valid Bearer token."
+        ),
+    },
+    {
+        "name": "health",
+        "description": "Liveness/readiness probe — checks app and DB status.",
+    },
+]
+
 app = FastAPI(
     title="FastAPI Postgres Template",
     description=(
-        "Production-ready FastAPI template with PostgreSQL, "
-        "async SQLAlchemy 2.0, JWT auth."
+        "## Production-ready FastAPI template\n\n"
+        "**Stack:** FastAPI · PostgreSQL · SQLAlchemy 2.0 async · Alembic · "
+        "JWT (access + refresh tokens) · bcrypt · slowapi rate limiting · "
+        "Prometheus metrics · Docker · Railway deploy.\n\n"
+        "**Auth flow:**\n"
+        "1. `POST /api/v1/users` — create account\n"
+        "2. `POST /api/v1/auth/token` — get access + refresh tokens\n"
+        "3. Use `Authorization: Bearer <access_token>` on protected routes\n"
+        "4. `POST /api/v1/auth/refresh` — rotate tokens before expiry\n\n"
+        "**Versioning:** all routes are prefixed with `/api/v1/`."
     ),
     version="1.0.0",
+    openapi_tags=_TAGS_METADATA,
     lifespan=lifespan,
 )
 
