@@ -26,10 +26,8 @@ class AuthService:
             raise UnauthorizedException("Inactive user")
 
         access_token = create_access_token(subject=user.id)
-
-        # single transaction — no nested begin()
-        async with self.session.begin():
-            rt = await self._create_refresh_token_in_tx(user.id)
+        async with self.session.begin_nested():
+            rt = await self._create_refresh_token(user.id)
 
         return Token(access_token=access_token, refresh_token=rt.token)
 
@@ -37,7 +35,9 @@ class AuthService:
         rt = await self.refresh_repo.get_by_token(refresh_token)
         if not rt or rt.revoked:
             raise UnauthorizedException("Invalid refresh token")
-        if rt.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        if rt.expires_at.replace(tzinfo=timezone.utc) < datetime.now(
+            timezone.utc
+        ):
             raise UnauthorizedException("Invalid refresh token")
 
         user = await self.repo.get_by_id(rt.user_id)
@@ -45,16 +45,14 @@ class AuthService:
             raise UnauthorizedException("Invalid refresh token")
 
         access = create_access_token(subject=user.id)
-
-        # delete old + create new in a single transaction — no nested begin()
-        async with self.session.begin():
+        async with self.session.begin_nested():
             await self.refresh_repo.delete(rt)
-            new_rt = await self._create_refresh_token_in_tx(user.id)
+            new_rt = await self._create_refresh_token(user.id)
 
         return Token(access_token=access, refresh_token=new_rt.token)
 
-    # internal helper — must be called INSIDE an already-open begin() block
-    async def _create_refresh_token_in_tx(self, user_id: int) -> RefreshToken:
+    async def _create_refresh_token(self, user_id: int) -> RefreshToken:
+        """Creates and persists a new refresh token for the given user."""
         token = secrets.token_urlsafe(32)
         expires = datetime.now(timezone.utc) + timedelta(
             days=settings.REFRESH_TOKEN_EXPIRE_DAYS

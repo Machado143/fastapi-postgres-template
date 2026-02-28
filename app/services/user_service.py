@@ -7,6 +7,8 @@ from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserCreate, UserPage, UserRead, UserUpdate
 
+_EMAIL_CONFLICT = "Email already registered"
+
 
 class UserService:
     def __init__(self, session: AsyncSession) -> None:
@@ -16,19 +18,17 @@ class UserService:
     async def create_user(self, data: UserCreate) -> UserRead:
         existing = await self.repo.get_by_email(data.email)
         if existing:
-            raise ConflictException(f"Email '{data.email}' is already registered")
+            raise ConflictException(_EMAIL_CONFLICT)
         user = User(
             email=data.email,
             hashed_password=hash_password(data.password),
             full_name=data.full_name,
         )
-        # transaction controlled here
         try:
-            async with self.session.begin():
+            async with self.session.begin_nested():
                 user = await self.repo.create(user)
         except IntegrityError:
-            # another request wrote the same email concurrently
-            raise ConflictException(f"Email '{data.email}' is already registered")
+            raise ConflictException(_EMAIL_CONFLICT)
         return UserRead.model_validate(user)
 
     async def get_user(self, user_id: int) -> UserRead:
@@ -53,7 +53,7 @@ class UserService:
         if data.email is not None and data.email != user.email:
             conflict = await self.repo.get_by_email(data.email)
             if conflict:
-                raise ConflictException(f"Email '{data.email}' is already registered")
+                raise ConflictException(_EMAIL_CONFLICT)
             user.email = data.email
         if data.full_name is not None:
             user.full_name = data.full_name
@@ -62,15 +62,15 @@ class UserService:
         if data.is_active is not None:
             user.is_active = data.is_active
         try:
-            async with self.session.begin():
+            async with self.session.begin_nested():
                 user = await self.repo.update(user)
         except IntegrityError:
-            raise ConflictException("Email already registered")
+            raise ConflictException(_EMAIL_CONFLICT)
         return UserRead.model_validate(user)
 
     async def delete_user(self, user_id: int) -> None:
         user = await self.repo.get_by_id(user_id)
         if not user:
             raise NotFoundException(f"User {user_id} not found")
-        async with self.session.begin():
+        async with self.session.begin_nested():
             await self.repo.delete(user)

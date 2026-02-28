@@ -16,9 +16,7 @@ class UserCreate(UserBase):
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters long.")
         if len(v.encode("utf-8")) > 72:
-            raise ValueError(
-                "Password must be at most 72 bytes (not characters) long."
-            )
+            raise ValueError("Password must be at most 72 bytes (not characters) long.")
         return v
 
 
@@ -36,9 +34,7 @@ class UserUpdate(BaseModel):
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters long.")
         if len(v.encode("utf-8")) > 72:
-            raise ValueError(
-                "Password must be at most 72 bytes (not characters) long."
-            )
+            raise ValueError("Password must be at most 72 bytes (not characters) long.")
         return v
 
 

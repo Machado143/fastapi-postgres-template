@@ -22,7 +22,7 @@ async def test_login_success(client: AsyncClient) -> None:
 async def test_login_wrong_password(client: AsyncClient) -> None:
     await client.post(
         "/api/v1/users",
-        json={"email": "auth_wrong@example.com", "password": "correct"},
+        json={"email": "auth_wrong@example.com", "password": "correct123"},
     )
     response = await client.post(
         "/api/v1/auth/token",
@@ -44,7 +44,11 @@ async def test_login_nonexistent_user(client: AsyncClient) -> None:
 async def test_get_me(client: AsyncClient) -> None:
     await client.post(
         "/api/v1/users",
-        json={"email": "auth_me@example.com", "password": "secret123", "full_name": "Me User"},
+        json={
+            "email": "auth_me@example.com",
+            "password": "secret123",
+            "full_name": "Me User",
+        },
     )
     token_response = await client.post(
         "/api/v1/auth/token",

@@ -85,9 +85,7 @@ app.include_router(v1_router, prefix="/api/v1")
 
 
 @app.exception_handler(AppException)
-async def app_exception_handler(
-    request: Request, exc: AppException
-) -> JSONResponse:
+async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.detail},
@@ -96,9 +94,7 @@ async def app_exception_handler(
 
 
 @app.exception_handler(ValueError)
-async def value_error_handler(
-    request: Request, exc: ValueError
-) -> JSONResponse:
+async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
     """Catches unhandled ValueErrors (e.g. bcrypt limit) and returns 422."""
     return JSONResponse(
         status_code=422,
@@ -107,9 +103,7 @@ async def value_error_handler(
 
 
 @app.exception_handler(Exception)
-async def unhandled_exception_handler(
-    request: Request, exc: Exception
-) -> JSONResponse:
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     logger.exception("Unhandled exception: %s", exc)
     return JSONResponse(
         status_code=500,
