@@ -10,10 +10,14 @@ from alembic import context
 # Import all models so Alembic can detect them
 from app.db.base import Base  # noqa: F401
 import app.models.user  # noqa: F401
+from app.core.config import settings
 
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+# override the URL in alembic.ini with our settings value
+config.set_main_option("sqlalchemy.url", str(settings.DATABASE_URL))
 
 target_metadata = Base.metadata
 
