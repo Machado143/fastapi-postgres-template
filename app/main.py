@@ -6,6 +6,7 @@ import uuid
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from starlette.middleware.base import BaseHTTPMiddleware
 from prometheus_client import Histogram, generate_latest, CONTENT_TYPE_LATEST
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -15,6 +16,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from app.api.v1.router import router as v1_router
 from app.core.exceptions import AppException
 from app.core.logging import logger, setup_logging, request_id_ctx_var
+from app.db.session import engine
 
 
 # Prometheus histogram for request latency
@@ -85,7 +87,9 @@ app.include_router(v1_router, prefix="/api/v1")
 
 
 @app.exception_handler(AppException)
-async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
+async def app_exception_handler(
+    request: Request, exc: AppException
+) -> JSONResponse:
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.detail},
@@ -94,8 +98,10 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
 
 
 @app.exception_handler(ValueError)
-async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
-    """Catches unhandled ValueErrors (e.g. bcrypt limit) and returns 422."""
+async def value_error_handler(
+    request: Request, exc: ValueError
+) -> JSONResponse:
+    """Catches unhandled ValueErrors and returns 422."""
     return JSONResponse(
         status_code=422,
         content={"data": None, "error": str(exc), "meta": None},
@@ -103,7 +109,9 @@ async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse
 
 
 @app.exception_handler(Exception)
-async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+async def unhandled_exception_handler(
+    request: Request, exc: Exception
+) -> JSONResponse:
     logger.exception("Unhandled exception: %s", exc)
     return JSONResponse(
         status_code=500,
@@ -112,9 +120,18 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 
 
 @app.get("/health", tags=["health"])
-async def health() -> dict[str, str]:
-    """Simple health check used by Docker/Railway/K8s."""
-    return {"status": "ok"}
+async def health() -> dict:
+    """Health check — verifies DB connectivity in addition to app status."""
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        db_status = "ok"
+    except Exception:
+        logger.exception("Health check: database unreachable")
+        db_status = "unreachable"
+
+    status = "ok" if db_status == "ok" else "degraded"
+    return {"status": status, "database": db_status}
 
 
 # Register middlewares (order matters: outermost first)
