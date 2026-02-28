@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(30, ge=1)
     DEBUG: bool = False
     ENV: Literal["dev", "staging", "production"] = "dev"
+    REFRESH_TOKEN_EXPIRE_DAYS: int = Field(7, ge=1)
 
     class Config:
         # lê automaticamente .env na raiz do projeto

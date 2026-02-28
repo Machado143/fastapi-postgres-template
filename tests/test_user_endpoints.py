@@ -6,7 +6,11 @@ from httpx import AsyncClient
 async def test_create_user_endpoint(client: AsyncClient) -> None:
     response = await client.post(
         "/api/v1/users",
-        json={"email": "ep_user@example.com", "password": "secret123", "full_name": "EP User"},
+        json={
+            "email": "ep_user@example.com",
+            "password": "secret123",
+            "full_name": "EP User",
+        },
     )
     assert response.status_code == 201
     data = response.json()
@@ -87,3 +91,35 @@ async def test_delete_user_with_auth(client: AsyncClient) -> None:
 
     response = await client.delete(f"/api/v1/users/{user_id}", headers=headers)
     assert response.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_refresh_token(client: AsyncClient) -> None:
+    # create and login
+    await client.post(
+        "/api/v1/users",
+        json={"email": "ref_ep@example.com", "password": "pwd"},
+    )
+    login = await client.post(
+        "/api/v1/auth/token",
+        data={"username": "ref_ep@example.com", "password": "pwd"},
+    )
+    assert login.status_code == 200
+    tokens = login.json()
+    assert "refresh_token" in tokens
+
+    refresh_resp = await client.post(
+        "/api/v1/auth/refresh", json={"refresh_token": tokens["refresh_token"]}
+    )
+    assert refresh_resp.status_code == 200
+    new_tokens = refresh_resp.json()
+    assert new_tokens["access_token"] != tokens["access_token"]
+    assert new_tokens["refresh_token"] != tokens["refresh_token"]
+
+
+@pytest.mark.asyncio
+async def test_refresh_invalid(client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/v1/auth/refresh", json={"refresh_token": "bad"}
+    )
+    assert response.status_code == 401
