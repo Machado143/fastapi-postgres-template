@@ -1,3 +1,4 @@
+import pytest
 import pytest_asyncio
 from collections.abc import AsyncGenerator
 
@@ -35,8 +36,19 @@ async def create_tables() -> AsyncGenerator[None, None]:
 
 @pytest_asyncio.fixture
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
-    async with TestSessionLocal() as session:
-        yield session
+    """
+    Abre uma conexão, começa uma transação e faz rollback ao final.
+    Isso garante isolamento total: cada teste começa com banco limpo,
+    sem depender de delete manual ou ordem de execução.
+    """
+    async with test_engine.connect() as conn:
+        await conn.begin()
+        session = AsyncSession(bind=conn, expire_on_commit=False)
+        try:
+            yield session
+        finally:
+            await session.close()
+            await conn.rollback()  # descarta tudo que o teste escreveu
 
 
 @pytest_asyncio.fixture
