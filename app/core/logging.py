@@ -5,11 +5,11 @@ from pythonjsonlogger import jsonlogger
 
 import contextvars
 
-request_id_ctx_var: contextvars.ContextVar[str | None] = (
-    contextvars.ContextVar("request_id", default=None)
+request_id_ctx_var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "request_id", default=None
 )
-user_id_ctx_var: contextvars.ContextVar[int | None] = (
-    contextvars.ContextVar("user_id", default=None)
+user_id_ctx_var: contextvars.ContextVar[int | None] = contextvars.ContextVar(
+    "user_id", default=None
 )
 
 
@@ -25,8 +25,7 @@ class ContextFilter(logging.Filter):
 def setup_logging() -> None:
     handler = logging.StreamHandler(sys.stdout)
     fmt = jsonlogger.JsonFormatter(
-        "%(asctime)s %(levelname)s %(name)s "
-        "%(message)s %(request_id)s %(user_id)s"
+        "%(asctime)s %(levelname)s %(name)s " "%(message)s %(request_id)s %(user_id)s"
     )
     handler.setFormatter(fmt)
     handler.addFilter(ContextFilter())

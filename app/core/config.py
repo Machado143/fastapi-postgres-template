@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(7, ge=1)
     DB_CONNECT_TIMEOUT: int = Field(5, ge=1)
 
+    # Admin panel token — set a strong secret in production.
+    # Defaults to SECRET_KEY so local dev works with zero extra config.
+    ADMIN_TOKEN: str = ""
+
     class Config:
         # reads .env file at project root automatically
         env_file = ".env"
@@ -35,6 +39,9 @@ class Settings(BaseSettings):
         # always force DEBUG=False in production regardless of env input
         if values.get("ENV") == "production":
             values["DEBUG"] = False
+        # fall back to SECRET_KEY when ADMIN_TOKEN is not explicitly set
+        if not values.get("ADMIN_TOKEN"):
+            values["ADMIN_TOKEN"] = values.get("SECRET_KEY", "")
         return values
 
 

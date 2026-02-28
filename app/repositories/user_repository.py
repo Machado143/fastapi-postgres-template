@@ -11,29 +11,18 @@ class UserRepository:
         self.session = session
 
     async def get_by_id(self, user_id: int) -> User | None:
-        result = await self.session.execute(
-            select(User).where(User.id == user_id)
-        )
+        result = await self.session.execute(select(User).where(User.id == user_id))
         return result.scalar_one_or_none()
 
     async def get_by_email(self, email: str) -> User | None:
-        result = await self.session.execute(
-            select(User).where(User.email == email)
-        )
+        result = await self.session.execute(select(User).where(User.email == email))
         return result.scalar_one_or_none()
 
-    async def list(
-        self, limit: int = 20, offset: int = 0
-    ) -> tuple[list[User], int]:
+    async def list(self, limit: int = 20, offset: int = 0) -> tuple[list[User], int]:
         # Run count and fetch concurrently — avoids sequential round-trips.
-        count_q = self.session.execute(
-            select(func.count()).select_from(User)
-        )
+        count_q = self.session.execute(select(func.count()).select_from(User))
         rows_q = self.session.execute(
-            select(User)
-            .order_by(User.id)
-            .limit(limit)
-            .offset(offset)
+            select(User).order_by(User.id).limit(limit).offset(offset)
         )
         count_result, rows_result = await asyncio.gather(count_q, rows_q)
         return list(rows_result.scalars().all()), count_result.scalar_one()

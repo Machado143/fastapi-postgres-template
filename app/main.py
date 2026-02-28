@@ -7,12 +7,17 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
+from sqladmin import Admin
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from prometheus_client import Histogram, generate_latest, CONTENT_TYPE_LATEST
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.middleware import SlowAPIMiddleware
 
+from app.admin.auth import AdminAuth
+from app.admin.views import RefreshTokenAdmin, UserAdmin
 from app.api.v1.router import router as v1_router
+from app.core.config import settings
 from app.core.exceptions import AppException
 from app.core.limiter import limiter
 from app.core.logging import logger, setup_logging, request_id_ctx_var
@@ -117,6 +122,25 @@ app = FastAPI(
 )
 
 app.include_router(v1_router, prefix="/api/v1")
+
+# --- Admin panel (sqladmin) ---
+# Available at /admin — protected by ADMIN_TOKEN env var.
+# SessionMiddleware is required by sqladmin's auth backend.
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.SECRET_KEY,
+    session_cookie="admin_session",
+    https_only=False,  # set True in production behind HTTPS
+)
+admin = Admin(
+    app,
+    engine,
+    authentication_backend=AdminAuth(secret_key=settings.SECRET_KEY),
+    title="FastAPI Admin",
+    base_url="/admin",
+)
+admin.add_view(UserAdmin)
+admin.add_view(RefreshTokenAdmin)
 
 
 @app.exception_handler(AppException)
