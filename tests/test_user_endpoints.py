@@ -61,7 +61,7 @@ async def test_list_users_with_auth(client: AsyncClient) -> None:
     token = token_response.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = await client.get("/api/v1/users?limit=10&offset=0", headers=headers)
+    response = await client.get("/api/v1/users?page=1&limit=10", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert "items" in data

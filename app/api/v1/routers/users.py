@@ -21,12 +21,13 @@ async def create_user(
 
 @router.get("", response_model=UserPage)
 async def list_users(
-    limit: int = Query(default=20, ge=1, le=100),
-    offset: int = Query(default=0, ge=0),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
     _current_user: User = Depends(get_current_user),
 ) -> UserPage:
     service = UserService(db)
+    offset = (page - 1) * limit
     return await service.list_users(limit=limit, offset=offset)
 
 
