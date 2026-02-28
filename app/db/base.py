@@ -9,4 +9,5 @@ class Base(DeclarativeBase):
     (the old version imported ``Base`` from itself) and keeps responsibilities
     separated.
     """
+
     pass
