@@ -6,7 +6,7 @@ from app.core.config import settings
 
 # engine with connection timeout and pool settings
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    str(settings.DATABASE_URL),
     echo=False,
     future=True,
     connect_args={"timeout": settings.DB_CONNECT_TIMEOUT},
