@@ -121,3 +121,10 @@ async def test_refresh_token(client: AsyncClient) -> None:
 async def test_refresh_invalid(client: AsyncClient) -> None:
     response = await client.post("/api/v1/auth/refresh", json={"refresh_token": "bad"})
     assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_metrics_endpoint(client: AsyncClient) -> None:
+    response = await client.get("/metrics")
+    assert response.status_code == 200
+    assert "http_request_duration_seconds" in response.text

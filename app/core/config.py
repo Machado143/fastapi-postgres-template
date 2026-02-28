@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     ENV: Literal["dev", "staging", "production"] = "dev"
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(7, ge=1)
+    DB_CONNECT_TIMEOUT: int = Field(5, ge=1)
 
     class Config:
         # lê automaticamente .env na raiz do projeto

@@ -1,12 +1,61 @@
 from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
+import time
+import uuid
+import contextvars
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from prometheus_client import Histogram, generate_latest, CONTENT_TYPE_LATEST
 
 from app.api.v1.router import router as v1_router
 from app.core.exceptions import AppException
 from app.core.logging import logger, setup_logging
+
+
+# context variable for request id
+request_id_ctx_var = contextvars.ContextVar("request_id", default=None)
+
+# Prometheus metrics
+REQUEST_LATENCY = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request latency",
+    ["method", "path", "status_code"],
+)
+
+
+class RequestIdMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        rid = str(uuid.uuid4())
+        request_id_ctx_var.set(rid)
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = rid
+        return response
+
+
+class MetricsMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        start = time.time()
+        response = await call_next(request)
+        elapsed = time.time() - start
+        REQUEST_LATENCY.labels(
+            request.method, request.url.path, response.status_code
+        ).observe(elapsed)
+        return response
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=63072000; includeSubDomains; preload"
+        )
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "same-origin"
+        return response
 
 
 @asynccontextmanager
@@ -52,3 +101,21 @@ async def health() -> dict[str, str]:
     Returns a static JSON so that external systems know the app is up.
     """
     return {"status": "ok"}
+
+
+# register middlewares
+app.add_middleware(RequestIdMiddleware)
+app.add_middleware(MetricsMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # configure in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/metrics")
+async def metrics_endpt():
+    return JSONResponse(generate_latest(), media_type=CONTENT_TYPE_LATEST)
