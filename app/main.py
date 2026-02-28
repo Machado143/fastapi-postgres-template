@@ -43,3 +43,12 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
         status_code=500,
         content={"detail": "Internal server error"},
     )
+
+
+@app.get("/health", tags=["health"])
+async def health() -> dict[str, str]:
+    """Simple health check used by Docker/K8s.
+
+    Returns a static JSON so that external systems know the app is up.
+    """
+    return {"status": "ok"}
