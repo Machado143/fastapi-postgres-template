@@ -5,16 +5,32 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
 
-# engine with connection timeout and pool settings
-engine = create_async_engine(
-    str(settings.DATABASE_URL),
-    echo=False,
-    future=True,
-    connect_args={"timeout": settings.DB_CONNECT_TIMEOUT},
-)
+_db_url = str(settings.DATABASE_URL)
+
+# SQLite (used in tests) doesn't support connection pooling.
+# PostgreSQL gets a tuned pool for async web workloads.
+_is_sqlite = _db_url.startswith("sqlite")
+
+_engine_kwargs: dict = {
+    "echo": False,
+    "future": True,
+}
+if _is_sqlite:
+    _engine_kwargs["poolclass"] = NullPool
+else:
+    # pool_size: persistent connections kept alive.
+    # max_overflow: extra burst connections.
+    # pool_pre_ping: validates connections before use (detects stale conns).
+    _engine_kwargs["pool_size"] = 10
+    _engine_kwargs["max_overflow"] = 20
+    _engine_kwargs["pool_pre_ping"] = True
+    _engine_kwargs["connect_args"] = {"timeout": settings.DB_CONNECT_TIMEOUT}
+
+engine = create_async_engine(_db_url, **_engine_kwargs)
 
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
