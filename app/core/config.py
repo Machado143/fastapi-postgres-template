@@ -5,11 +5,11 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # obrigatórios
+    # required
     DATABASE_URL: AnyUrl
     JWT_SECRET_KEY: str
 
-    # valores com default razoável
+    # reasonable defaults
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(30, ge=1)
     DEBUG: bool = False
     ENV: Literal["dev", "staging", "production"] = "dev"
@@ -17,14 +17,15 @@ class Settings(BaseSettings):
     DB_CONNECT_TIMEOUT: int = Field(5, ge=1)
 
     class Config:
-        # lê automaticamente .env na raiz do projeto
+        # automatically reads .env at project root
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = True
 
     @field_validator("DATABASE_URL", mode="before")
     def _ensure_asyncpg_prefix(cls, v: str) -> str:
-        # Railway (and many providers) give postgresql://; SQLAlchemy async needs +asyncpg
+        # Railway (and many providers) provide postgresql://
+        # SQLAlchemy async needs +asyncpg
         if isinstance(v, str) and v.startswith("postgresql://"):
             return v.replace("postgresql://", "postgresql+asyncpg://", 1)
         return v
@@ -37,5 +38,5 @@ class Settings(BaseSettings):
         return values
 
 
-# instância única para ser reutilizada
+# singleton instance for reuse
 settings = Settings()
