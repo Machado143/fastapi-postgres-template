@@ -21,8 +21,9 @@ class UserService:
             hashed_password=hash_password(data.password),
             full_name=data.full_name,
         )
-        user = await self.repo.create(user)
-        await self.session.commit()
+        # transaction controlled here
+        async with self.session.begin():
+            user = await self.repo.create(user)
         return UserRead.model_validate(user)
 
     async def get_user(self, user_id: int) -> UserRead:
@@ -55,13 +56,13 @@ class UserService:
             user.hashed_password = hash_password(data.password)
         if data.is_active is not None:
             user.is_active = data.is_active
-        user = await self.repo.update(user)
-        await self.session.commit()
+        async with self.session.begin():
+            user = await self.repo.update(user)
         return UserRead.model_validate(user)
 
     async def delete_user(self, user_id: int) -> None:
         user = await self.repo.get_by_id(user_id)
         if not user:
             raise NotFoundException(f"User {user_id} not found")
-        await self.repo.delete(user)
-        await self.session.commit()
+        async with self.session.begin():
+            await self.repo.delete(user)
