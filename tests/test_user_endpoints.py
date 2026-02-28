@@ -119,7 +119,5 @@ async def test_refresh_token(client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_refresh_invalid(client: AsyncClient) -> None:
-    response = await client.post(
-        "/api/v1/auth/refresh", json={"refresh_token": "bad"}
-    )
+    response = await client.post("/api/v1/auth/refresh", json={"refresh_token": "bad"})
     assert response.status_code == 401

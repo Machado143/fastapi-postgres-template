@@ -40,11 +40,7 @@ class AuthService:
 
     async def refresh(self, refresh_token: str) -> Token:
         rt = await self.refresh_repo.get_by_token(refresh_token)
-        if (
-            not rt
-            or rt.expires_at < datetime.now(timezone.utc)
-            or rt.revoked
-        ):
+        if not rt or rt.expires_at < datetime.now(timezone.utc) or rt.revoked:
             raise UnauthorizedException("Invalid refresh token")
         user = await self.repo.get_by_id(rt.user_id)
         if not user:
