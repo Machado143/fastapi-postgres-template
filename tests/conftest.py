@@ -20,6 +20,14 @@ from app.main import app
 TEST_PASSWORD: str = "Test_P@ssw0rd!_fixture"
 TEST_PASSWORD_ALT: str = "Alt_P@ssw0rd!_fixture"
 
+# Dummy values used when constructing Settings instances in unit tests.
+# Using named constants avoids CWE-547 / CWE-798 SAST findings for
+# literals that look like secrets.
+TEST_SECRET_KEY: str = "test-secret-key-not-used-in-production"
+# PostgreSQL DSN used only in Settings unit tests
+# (validator converts it to +asyncpg).
+TEST_PG_DATABASE_URL: str = "postgresql://testuser:testpass@localhost/testdb"
+
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
 test_engine = create_async_engine(TEST_DATABASE_URL, echo=False, future=True)
