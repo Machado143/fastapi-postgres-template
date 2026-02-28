@@ -27,7 +27,7 @@ class AuthService:
 
         access_token = create_access_token(subject=user.id)
 
-        # transação única — sem begin() aninhado
+        # single transaction — no nested begin()
         async with self.session.begin():
             rt = await self._create_refresh_token_in_tx(user.id)
 
@@ -46,14 +46,14 @@ class AuthService:
 
         access = create_access_token(subject=user.id)
 
-        # delete + create em uma única transação, sem begin() aninhado
+        # delete old + create new in a single transaction — no nested begin()
         async with self.session.begin():
             await self.refresh_repo.delete(rt)
             new_rt = await self._create_refresh_token_in_tx(user.id)
 
         return Token(access_token=access, refresh_token=new_rt.token)
 
-    # método interno sem gerenciamento de transação — chamado DENTRO de um begin() já aberto
+    # internal helper — must be called INSIDE an already-open begin() block
     async def _create_refresh_token_in_tx(self, user_id: int) -> RefreshToken:
         token = secrets.token_urlsafe(32)
         expires = datetime.now(timezone.utc) + timedelta(

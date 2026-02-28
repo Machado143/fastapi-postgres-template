@@ -1,4 +1,3 @@
-import pytest
 import pytest_asyncio
 from collections.abc import AsyncGenerator
 
@@ -37,9 +36,9 @@ async def create_tables() -> AsyncGenerator[None, None]:
 @pytest_asyncio.fixture
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """
-    Abre uma conexão, começa uma transação e faz rollback ao final.
-    Isso garante isolamento total: cada teste começa com banco limpo,
-    sem depender de delete manual ou ordem de execução.
+    Opens a connection, starts a transaction, and rolls back after each test.
+    This guarantees full isolation: every test starts with a clean database
+    without relying on manual deletes or execution order.
     """
     async with test_engine.connect() as conn:
         await conn.begin()

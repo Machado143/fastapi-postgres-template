@@ -1,57 +1,36 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
+
+from sqlalchemy import Boolean, DateTime, Integer, String, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db.base import Base
 
 
-def _validate_password(v: str) -> str:
-    """Regras compartilhadas entre UserCreate e UserUpdate."""
-    if len(v) < 8:
-        raise ValueError("Password must be at least 8 characters long.")
-    if len(v.encode("utf-8")) > 72:
-        raise ValueError("Password must be at most 72 bytes long.")
-    return v
+class User(Base):
+    __tablename__ = "users"
 
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    email: Mapped[str] = mapped_column(
+        String(255), unique=True, nullable=False, index=True
+    )
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    full_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False
+    )
+    is_superuser: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
 
-class UserBase(BaseModel):
-    email: EmailStr
-    full_name: str | None = None
-
-
-class UserCreate(UserBase):
-    password: str
-
-    @field_validator("password")
-    @classmethod
-    def validate_password(cls, v: str) -> str:
-        return _validate_password(v)
-
-
-class UserUpdate(BaseModel):
-    email: EmailStr | None = None
-    full_name: str | None = None
-    password: str | None = None
-    is_active: bool | None = None
-
-    @field_validator("password")
-    @classmethod
-    def validate_password(cls, v: str | None) -> str | None:
-        # campo é opcional em update — só valida se foi fornecido
-        if v is not None:
-            return _validate_password(v)
-        return v
-
-
-class UserRead(UserBase):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    is_active: bool
-    is_superuser: bool
-    created_at: datetime
-    updated_at: datetime
-
-
-class UserPage(BaseModel):
-    items: list[UserRead]
-    total: int
-    limit: int
-    offset: int
+    refresh_tokens = relationship(
+        "RefreshToken", back_populates="user", cascade="all, delete-orphan"
+    )

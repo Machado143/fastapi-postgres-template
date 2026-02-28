@@ -8,8 +8,8 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 from app.db.base import Base  # noqa: F401
-import app.models.user  # noqa: F401
-import app.models.refresh_token  # noqa: F401  — era ausente; sem isso Alembic ignora a tabela
+from app.models.user import User  # noqa: F401
+from app.models.refresh_token import RefreshToken  # noqa: F401
 from app.core.config import settings
 
 config = context.config
