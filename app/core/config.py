@@ -1,14 +1,24 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Literal
+
+from pydantic import AnyUrl, BaseSettings, Field
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    # obrigatórios
+    DATABASE_URL: AnyUrl
+    JWT_SECRET_KEY: str
 
-    DATABASE_URL: str = "postgresql+asyncpg://user:password@localhost:5432/dbname"
-    TEST_DATABASE_URL: str = "sqlite+aiosqlite:///./test.db"
-    SECRET_KEY: str = "change-this-secret-key-in-production"
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    # valores com default razoável
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(30, ge=1)
+    DEBUG: bool = False
+    ENV: Literal["dev", "staging", "production"] = "dev"
+
+    class Config:
+        # lê automaticamente .env na raiz do projeto
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+        case_sensitive = True
 
 
+# instância única para ser reutilizada
 settings = Settings()
