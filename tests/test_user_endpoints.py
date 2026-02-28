@@ -128,3 +128,10 @@ async def test_metrics_endpoint(client: AsyncClient) -> None:
     response = await client.get("/metrics")
     assert response.status_code == 200
     assert "http_request_duration_seconds" in response.text
+
+
+@pytest.mark.asyncio
+async def test_health_endpoint(client: AsyncClient) -> None:
+    response = await client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}

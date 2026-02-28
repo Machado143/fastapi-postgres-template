@@ -5,7 +5,7 @@ import uuid
 import contextvars
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from prometheus_client import Histogram, generate_latest, CONTENT_TYPE_LATEST
@@ -127,4 +127,4 @@ app.add_middleware(SlowAPIMiddleware)
 
 @app.get("/metrics")
 async def metrics_endpt():
-    return JSONResponse(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)

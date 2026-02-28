@@ -18,7 +18,7 @@ class RequestIdFilter(logging.Filter):
 def setup_logging() -> None:
     handler = logging.StreamHandler(sys.stdout)
     fmt = jsonlogger.JsonFormatter(
-        '%(asctime)s %(levelname)s %(name)s %(message)s %(request_id)s'
+        "%(asctime)s %(levelname)s %(name)s %(message)s %(request_id)s"
     )
     handler.setFormatter(fmt)
     handler.addFilter(RequestIdFilter())
